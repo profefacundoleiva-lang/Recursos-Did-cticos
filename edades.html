@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Línea del Tiempo - Edición Artística</title>
+    <!-- Importamos una fuente más histórica/elegante -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ancho-juego: 1000px;
+            --color-prehistoria: #9b59b6;
+            --color-antigua: #f1c40f;
+            --color-media: #2ecc71;
+            --color-moderna: #e67e22;
+            --color-contemporanea: #95a5a6;
+            --exito: #27ae60;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            /* Fondo artístico: Degradado con textura de papel viejo */
+            background-color: #fdf5e6;
+            background-image: radial-gradient(#d2b48c 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        h1 { 
+            font-family: 'Cinzel', serif;
+            color: #2c3e50; 
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .instrucciones {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+        
+        /* --- TABLERO CON EFECTO DE SACUDIDA --- */
+        .game-container {
+            position: relative;
+            width: var(--ancho-juego);
+            height: 420px;
+            margin: 20px 0;
+            padding: 10px;
+            transition: transform 0.2s;
+        }
+
+        .shake {
+            animation: shakeAnim 0.4s ease-in-out;
+        }
+
+        @keyframes shakeAnim {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+        }
+
+        /* Barra de Edades */
+        .timeline-bar {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            transform: translateY(-50%);
+            display: flex;
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 2;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .age {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-align: center;
+            border-right: 2px solid rgba(0,0,0,0.1);
+        }
+
+        .prehistoria { width: 25%; background: var(--color-prehistoria); }
+        .antigua { width: 20%; background: var(--color-antigua); }
+        .media { width: 15%; background: var(--color-media); }
+        .moderna { width: 20%; background: var(--color-moderna); }
+        .contemporanea { width: 20%; background: var(--color-contemporanea); }
+
+        /* --- COLUMNAS DE HITOS --- */
+        .marker-col {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 140px;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .linea-punteada {
+            position: absolute;
+            top: 85px;
+            bottom: 85px;
+            left: 50%;
+            border-left: 3px dotted #2c3e50;
+            opacity: 0.3;
+            z-index: 1;
+        }
+
+        .drop-zone {
+            width: 130px;
+            height: 75px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
+            border: 2px dashed #95a5a6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .drop-zone.hover { 
+            background-color: rgba(52, 152, 219, 0.2); 
+            border-color: #3498db; 
+            transform: scale(1.05);
+        }
+
+        /* --- FICHAS --- */
+        .ficha {
+            width: 115px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #2c3e50;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 0.8rem;
+            text-align: center;
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .ficha:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .ficha.dragging { opacity: 0.5; transform: scale(0.9); }
+        
+        .tipo-fecha { background: #ebf5fb; color: #2980b9; border-left: 5px solid #2980b9; }
+        .tipo-evento { background: #fdfefe; color: #2c3e50; border-left: 5px solid #2c3e50; }
+
+        .drop-zone .ficha { 
+            width: 90%; 
+            height: auto; 
+            border: none; 
+            box-shadow: none; 
+            background: transparent; 
+            pointer-events: none;
+        }
+
+        /* --- CONTENEDORES DE BANCO --- */
+        .pools-container {
+            display: flex;
+            gap: 20px;
+            width: var(--ancho-juego);
+            margin-top: 20px;
+        }
+
+        .pool-box {
+            flex: 1;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid #bdc3c7;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 150px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .pool-title {
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #34495e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+
+        .pool-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        /* BOTÓN Y MENSAJES */
+        .ui-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        #verificar {
+            padding: 15px 50px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        #verificar:hover { background: #34495e; transform: scale(1.05); }
+        #verificar:active { transform: scale(0.95); }
+
+        #mensaje {
+            font-weight: 700;
+            font-size: 1.2rem;
+            height: 30px;
+            transition: all 0.3s;
+        }
+
+        /* CONFETI CANVAS */
+        #confeti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="confeti-canvas"></canvas>
+
+    <h1>CRONOLOGÍA UNIVERSAL</h1>
+    <p class="instrucciones">Organiza los hitos del tiempo para restaurar la historia</p>
+
+    <div class="game-container" id="main-board">
+        <div class="timeline-bar">
+            <div class="age prehistoria">PREHISTORIA</div>
+            <div class="age antigua">EDAD ANTIGUA</div>
+            <div class="age media">EDAD MEDIA</div>
+            <div class="age moderna">EDAD MODERNA</div>
+            <div class="age contemporanea">EDAD CONTEMP.</div>
+        </div>
+
+        <!-- Puntos clave (0%, 25%, 45%, 60%, 80%, 100%) -->
+        <div class="marker-col" style="left: 0%;">
+            <div class="drop-zone" data-type="fecha" data-id="f1"></div>
+            <div class="linea-punteada"></div>
+            <div class="drop-zone" data-type="evento" data-id="h1"></div>
+        </div>
+
+        <div class="marker-col" style="left: 25%;">
+            <div class="drop-zone" data-type="fecha" data-id="f2"></div>
+            <div class="linea-punteada"></div>
+            <div class="drop-zone" data-type="evento" data-id="h2"></div>
+        </div>
+
+        <div class="marker-col" style="left: 45%;">
+            <div class="drop-zone" data-type="fecha" data-id="f3"></div>
+            <div class="linea-punteada"></div>
+            <div class="drop-zone" data-type="evento" data-id="h3"></div>
+        </div>
+
+        <div class="marker-col" style="left: 60%;">
+            <div class="drop-zone" data-type="fecha" data-id="f4"></div>
+            <div class="linea-punteada"></div>
+            <div class="drop-zone" data-type="evento" data-id="h4"></div>
+        </div>
+
+        <div class="marker-col" style="left: 80%;">
+            <div class="drop-zone" data-type="fecha" data-id="f5"></div>
+            <div class="linea-punteada"></div>
+            <div class="drop-zone" data-type="evento" data-id="h5"></div>
+        </div>
+
+        <div class="marker-col" style="left: 100%;">
+            <div class="drop-zone" data-type="fecha" data-id="f6"></div>
+            <div class="linea-punteada"></div>
+            <div class="drop-zone" data-type="evento" data-id="h6"></div>
+        </div>
+    </div>
+
+    <div class="ui-controls">
+        <div id="mensaje"></div>
+        <button id="verificar">VERIFICAR ORDEN</button>
+    </div>
+
+    <div class="pools-container">
+        <div class="pool-box">
+            <div class="pool-title">📅 Cronología</div>
+            <div id="pool-fechas" class="pool-content"></div>
+        </div>
+
+        <div class="pool-box">
+            <div class="pool-title">📜 Grandes Hitos</div>
+            <div id="pool-eventos" class="pool-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const datos = [
+            { id: "f1", texto: "Millones de años atrás", tipo: "fecha" },
+            { id: "f2", texto: "3.500 a.C.", tipo: "fecha" },
+            { id: "f3", texto: "476 d.C.", tipo: "fecha" },
+            { id: "f4", texto: "1.492 d.C.", tipo: "fecha" },
+            { id: "f5", texto: "1.789 d.C.", tipo: "fecha" },
+            { id: "f6", texto: "Actualidad", tipo: "fecha" },
+            { id: "h1", texto: "Origen del Ser Humano", tipo: "evento" },
+            { id: "h2", texto: "Aparición de la Escritura", tipo: "evento" },
+            { id: "h3", texto: "Caída de Roma", tipo: "evento" },
+            { id: "h4", texto: "Colón llega a América", tipo: "evento" },
+            { id: "h5", texto: "Revolución Francesa", tipo: "evento" },
+            { id: "h6", texto: "Era Digital", tipo: "evento" }
+        ];
+
+        let fichaArrastrada = null;
+        const canvas = document.getElementById('confeti-canvas');
+        const ctx = canvas.getContext('2d');
+        let partículas = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function iniciar() {
+            const pFechas = document.getElementById('pool-fechas');
+            const pEventos = document.getElementById('pool-eventos');
+            const barajados = [...datos].sort(() => Math.random() - 0.5);
+            
+            barajados.forEach(item => {
+                const f = document.createElement('div');
+                f.className = `ficha tipo-${item.tipo}`;
+                f.draggable = true;
+                f.innerText = item.texto;
+                f.dataset.id = item.id;
+                f.dataset.tipo = item.tipo;
+
+                f.addEventListener('dragstart', () => {
+                    fichaArrastrada = f;
+                    f.classList.add('dragging');
+                });
+                f.addEventListener('dragend', () => f.classList.remove('dragging'));
+
+                if(item.tipo === 'fecha') pFechas.appendChild(f);
+                else pEventos.appendChild(f);
+            });
+
+            document.querySelectorAll('.drop-zone, .pool-content').forEach(zona => {
+                zona.addEventListener('dragover', e => e.preventDefault());
+                zona.addEventListener('dragenter', () => zona.classList.add('hover'));
+                zona.addEventListener('dragleave', () => zona.classList.remove('hover'));
+                zona.addEventListener('drop', () => {
+                    zona.classList.remove('hover');
+                    if (zona.classList.contains('drop-zone')) {
+                        if (fichaArrastrada.dataset.tipo !== zona.dataset.type) return;
+                        if (zona.children.length > 0) devolverAlPool(zona.children[0]);
+                        zona.appendChild(fichaArrastrada);
+                    } else {
+                        const idPool = zona.id;
+                        if ((fichaArrastrada.dataset.tipo === 'fecha' && idPool === 'pool-fechas') ||
+                            (fichaArrastrada.dataset.tipo === 'evento' && idPool === 'pool-eventos')) {
+                            zona.appendChild(fichaArrastrada);
+                        }
+                    }
+                });
+            });
+        }
+
+        function devolverAlPool(ficha) {
+            const pool = ficha.dataset.tipo === 'fecha' ? 
+                         document.getElementById('pool-fechas') : 
+                         document.getElementById('pool-eventos');
+            pool.appendChild(ficha);
+        }
+
+        document.getElementById('verificar').onclick = () => {
+            let correctas = 0;
+            const zonas = document.querySelectorAll('.drop-zone');
+            const board = document.getElementById('main-board');
+            
+            zonas.forEach(z => {
+                const ficha = z.children[0];
+                if (ficha && ficha.dataset.id === z.dataset.id) {
+                    z.style.borderColor = "#2ecc71";
+                    z.style.backgroundColor = "rgba(46, 204, 113, 0.2)";
+                    z.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.4)";
+                    correctas++;
+                } else {
+                    z.style.borderColor = "#e74c3c";
+                    z.style.backgroundColor = "rgba(231, 76, 60, 0.2)";
+                    z.style.boxShadow = "none";
+                }
+            });
+
+            const msg = document.getElementById('mensaje');
+            if (correctas === 12) {
+                msg.innerText = "¡HISTORIA RESTAURADA CON ÉXITO!";
+                msg.style.color = "#27ae60";
+                dispararConfeti();
+            } else {
+                msg.innerText = `Llevas ${correctas} de 12 aciertos.`;
+                msg.style.color = "#c0392b";
+                // Efecto de sacudida si hay errores
+                board.classList.add('shake');
+                setTimeout(() => board.classList.remove('shake'), 400);
+            }
+        };
+
+        // --- LÓGICA DE CONFETI ---
+        function dispararConfeti() {
+            partículas = [];
+            for (let i = 0; i < 150; i++) {
+                partículas.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                    speed: Math.random() * 3 + 2,
+                    angle: Math.random() * 6.28
+                });
+            }
+            animarConfeti();
+        }
+
+        function animarConfeti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let activas = false;
+            partículas.forEach(p => {
+                p.y += p.speed;
+                p.x += Math.sin(p.angle) * 2;
+                if (p.y < canvas.height) {
+                    activas = true;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                }
+            });
+            if (activas) requestAnimationFrame(animarConfeti);
+        }
+
+        iniciar();
+    </script>
+</body>
+</html>
