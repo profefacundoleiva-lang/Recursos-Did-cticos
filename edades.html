@@ -2,25 +2,31 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Línea del Tiempo - Edición Artística</title>
-    <!-- Importamos una fuente más histórica/elegante -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cronología Histórica Universal</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Polyfill para compatibilidad táctil total -->
+    <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch-polyfill@1.5.0/DragDropTouch.min.js"></script>
     <style>
         :root {
-            --ancho-juego: 1000px;
+            --ancho-tablero: 1100px;
             --color-prehistoria: #9b59b6;
             --color-antigua: #f1c40f;
             --color-media: #2ecc71;
             --color-moderna: #e67e22;
             --color-contemporanea: #95a5a6;
-            --exito: #27ae60;
-            --error: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            /* Evita la selección de texto y menús contextuales en móviles/tablets */
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         body {
             font-family: 'Quicksand', sans-serif;
-            /* Fondo artístico: Degradado con textura de papel viejo */
             background-color: #fdf5e6;
             background-image: radial-gradient(#d2b48c 0.5px, transparent 0.5px);
             background-size: 20px 20px;
@@ -28,44 +34,43 @@
             flex-direction: column;
             align-items: center;
             margin: 0;
-            padding: 20px;
-            user-select: none;
+            padding: 10px;
             overflow-x: hidden;
+            touch-action: manipulation;
         }
 
         h1 { 
             font-family: 'Cinzel', serif;
             color: #2c3e50; 
-            margin-bottom: 5px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
             text-align: center;
+            font-size: clamp(1.2rem, 5vw, 2.2rem);
+            margin: 15px 0 5px;
         }
 
         .instrucciones {
             color: #7f8c8d;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             font-style: italic;
+            font-size: 0.9rem;
+            text-align: center;
         }
-        
-        /* --- TABLERO CON EFECTO DE SACUDIDA --- */
+
+        /* CONTENEDOR DE DESPLAZAMIENTO (Para móviles y tablets) */
+        .game-viewport {
+            width: 100%;
+            max-width: 1200px;
+            overflow-x: auto;
+            padding: 20px 0;
+            cursor: grab;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 15px;
+        }
+
         .game-container {
             position: relative;
-            width: var(--ancho-juego);
-            height: 420px;
-            margin: 20px 0;
-            padding: 10px;
-            transition: transform 0.2s;
-        }
-
-        .shake {
-            animation: shakeAnim 0.4s ease-in-out;
-        }
-
-        @keyframes shakeAnim {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            50% { transform: translateX(10px); }
-            75% { transform: translateX(-10px); }
+            width: var(--ancho-tablero);
+            height: 450px;
+            margin: 0 auto;
         }
 
         /* Barra de Edades */
@@ -81,7 +86,7 @@
             border-radius: 12px;
             overflow: hidden;
             z-index: 2;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
         .age {
@@ -92,9 +97,9 @@
             font-weight: 700;
             font-size: 0.85rem;
             color: white;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
             text-align: center;
-            border-right: 2px solid rgba(0,0,0,0.1);
+            padding: 5px;
         }
 
         .prehistoria { width: 25%; background: var(--color-prehistoria); }
@@ -103,7 +108,7 @@
         .moderna { width: 20%; background: var(--color-moderna); }
         .contemporanea { width: 20%; background: var(--color-contemporanea); }
 
-        /* --- COLUMNAS DE HITOS --- */
+        /* Columnas */
         .marker-col {
             position: absolute;
             top: 0;
@@ -123,15 +128,14 @@
             top: 85px;
             bottom: 85px;
             left: 50%;
-            border-left: 3px dotted #2c3e50;
-            opacity: 0.3;
+            border-left: 3px dotted rgba(44, 62, 80, 0.3);
             z-index: 1;
         }
 
         .drop-zone {
             width: 130px;
-            height: 75px;
-            background: rgba(255, 255, 255, 0.6);
+            height: 80px;
+            background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(4px);
             border: 2px dashed #95a5a6;
             border-radius: 12px;
@@ -148,7 +152,7 @@
             transform: scale(1.05);
         }
 
-        /* --- FICHAS --- */
+        /* Fichas mejoradas */
         .ficha {
             width: 115px;
             padding: 10px;
@@ -160,40 +164,39 @@
             text-align: center;
             font-weight: 700;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s, box-shadow 0.2s;
+            /* Evita el resaltado azul al tocar en móviles */
+            -webkit-tap-highlight-color: transparent;
+            /* Evita que se tome como imagen descargable */
+            pointer-events: auto;
         }
         
-        .ficha:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-        .ficha.dragging { opacity: 0.5; transform: scale(0.9); }
-        
+        .ficha.dragging { opacity: 0.4; transform: scale(0.9); }
         .tipo-fecha { background: #ebf5fb; color: #2980b9; border-left: 5px solid #2980b9; }
         .tipo-evento { background: #fdfefe; color: #2c3e50; border-left: 5px solid #2c3e50; }
 
         .drop-zone .ficha { 
             width: 90%; 
-            height: auto; 
             border: none; 
             box-shadow: none; 
             background: transparent; 
-            pointer-events: none;
         }
 
-        /* --- CONTENEDORES DE BANCO --- */
+        /* BANCOS DE FICHAS */
         .pools-container {
             display: flex;
-            gap: 20px;
-            width: var(--ancho-juego);
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 1100px;
             margin-top: 20px;
         }
 
         .pool-box {
-            flex: 1;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.7);
             border: 2px solid #bdc3c7;
             border-radius: 15px;
-            padding: 20px;
-            min-height: 150px;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            padding: 15px;
+            min-height: 120px;
         }
 
         .pool-title {
@@ -201,9 +204,8 @@
             font-weight: 700;
             margin-bottom: 15px;
             color: #34495e;
-            text-transform: uppercase;
-            letter-spacing: 1px;
             font-size: 0.9rem;
+            letter-spacing: 1px;
         }
 
         .pool-content {
@@ -213,47 +215,37 @@
             justify-content: center;
         }
 
-        /* BOTÓN Y MENSAJES */
-        .ui-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin: 30px 0;
-        }
-
         #verificar {
-            padding: 15px 50px;
+            margin: 20px 0;
+            padding: 15px 60px;
             background: #2c3e50;
             color: white;
             border: none;
             border-radius: 50px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-family: 'Cinzel', serif;
             cursor: pointer;
-            transition: all 0.3s;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: 0.3s;
         }
-        
-        #verificar:hover { background: #34495e; transform: scale(1.05); }
-        #verificar:active { transform: scale(0.95); }
+
+        #verificar:hover { transform: scale(1.05); background: #34495e; }
 
         #mensaje {
             font-weight: 700;
-            font-size: 1.2rem;
-            height: 30px;
-            transition: all 0.3s;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
         }
 
-        /* CONFETI CANVAS */
         #confeti-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 100;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
+        }
+
+        /* Tablet y Escritorio */
+        @media (min-width: 900px) {
+            .pools-container { flex-direction: row; }
         }
 
     </style>
@@ -263,68 +255,63 @@
     <canvas id="confeti-canvas"></canvas>
 
     <h1>CRONOLOGÍA UNIVERSAL</h1>
-    <p class="instrucciones">Organiza los hitos del tiempo para restaurar la historia</p>
+    <p class="instrucciones">Organiza las fichas. En móviles, desliza el tablero horizontalmente.</p>
 
-    <div class="game-container" id="main-board">
-        <div class="timeline-bar">
-            <div class="age prehistoria">PREHISTORIA</div>
-            <div class="age antigua">EDAD ANTIGUA</div>
-            <div class="age media">EDAD MEDIA</div>
-            <div class="age moderna">EDAD MODERNA</div>
-            <div class="age contemporanea">EDAD CONTEMP.</div>
-        </div>
+    <div id="mensaje"></div>
 
-        <!-- Puntos clave (0%, 25%, 45%, 60%, 80%, 100%) -->
-        <div class="marker-col" style="left: 0%;">
-            <div class="drop-zone" data-type="fecha" data-id="f1"></div>
-            <div class="linea-punteada"></div>
-            <div class="drop-zone" data-type="evento" data-id="h1"></div>
-        </div>
+    <div class="game-viewport">
+        <div class="game-container" id="main-board">
+            <div class="timeline-bar">
+                <div class="age prehistoria">PREHISTORIA</div>
+                <div class="age antigua">EDAD ANTIGUA</div>
+                <div class="age media">EDAD MEDIA</div>
+                <div class="age moderna">EDAD MODERNA</div>
+                <div class="age contemporanea">EDAD CONTEMP.</div>
+            </div>
 
-        <div class="marker-col" style="left: 25%;">
-            <div class="drop-zone" data-type="fecha" data-id="f2"></div>
-            <div class="linea-punteada"></div>
-            <div class="drop-zone" data-type="evento" data-id="h2"></div>
-        </div>
-
-        <div class="marker-col" style="left: 45%;">
-            <div class="drop-zone" data-type="fecha" data-id="f3"></div>
-            <div class="linea-punteada"></div>
-            <div class="drop-zone" data-type="evento" data-id="h3"></div>
-        </div>
-
-        <div class="marker-col" style="left: 60%;">
-            <div class="drop-zone" data-type="fecha" data-id="f4"></div>
-            <div class="linea-punteada"></div>
-            <div class="drop-zone" data-type="evento" data-id="h4"></div>
-        </div>
-
-        <div class="marker-col" style="left: 80%;">
-            <div class="drop-zone" data-type="fecha" data-id="f5"></div>
-            <div class="linea-punteada"></div>
-            <div class="drop-zone" data-type="evento" data-id="h5"></div>
-        </div>
-
-        <div class="marker-col" style="left: 100%;">
-            <div class="drop-zone" data-type="fecha" data-id="f6"></div>
-            <div class="linea-punteada"></div>
-            <div class="drop-zone" data-type="evento" data-id="h6"></div>
+            <!-- Posiciones: 0, 25, 45, 60, 80, 100 % -->
+            <div class="marker-col" style="left: 0%;">
+                <div class="drop-zone" data-type="fecha" data-id="f1"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h1"></div>
+            </div>
+            <div class="marker-col" style="left: 25%;">
+                <div class="drop-zone" data-type="fecha" data-id="f2"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h2"></div>
+            </div>
+            <div class="marker-col" style="left: 45%;">
+                <div class="drop-zone" data-type="fecha" data-id="f3"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h3"></div>
+            </div>
+            <div class="marker-col" style="left: 60%;">
+                <div class="drop-zone" data-type="fecha" data-id="f4"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h4"></div>
+            </div>
+            <div class="marker-col" style="left: 80%;">
+                <div class="drop-zone" data-type="fecha" data-id="f5"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h5"></div>
+            </div>
+            <div class="marker-col" style="left: 100%;">
+                <div class="drop-zone" data-type="fecha" data-id="f6"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h6"></div>
+            </div>
         </div>
     </div>
 
-    <div class="ui-controls">
-        <div id="mensaje"></div>
-        <button id="verificar">VERIFICAR ORDEN</button>
-    </div>
+    <button id="verificar">VERIFICAR</button>
 
     <div class="pools-container">
         <div class="pool-box">
-            <div class="pool-title">📅 Cronología</div>
+            <div class="pool-title">📅 CRONOLOGÍA</div>
             <div id="pool-fechas" class="pool-content"></div>
         </div>
-
         <div class="pool-box">
-            <div class="pool-title">📜 Grandes Hitos</div>
+            <div class="pool-title">📜 GRANDES HITOS</div>
             <div id="pool-eventos" class="pool-content"></div>
         </div>
     </div>
@@ -340,9 +327,9 @@
             { id: "h1", texto: "Origen del Ser Humano", tipo: "evento" },
             { id: "h2", texto: "Aparición de la Escritura", tipo: "evento" },
             { id: "h3", texto: "Caída de Roma", tipo: "evento" },
-            { id: "h4", texto: "Colón llega a América", tipo: "evento" },
+            { id: "h4", texto: "Encuentro de Mundos", tipo: "evento" },
             { id: "h5", texto: "Revolución Francesa", tipo: "evento" },
-            { id: "h6", texto: "Era Digital", tipo: "evento" }
+            { id: "h6", texto: "Era de la Información", tipo: "evento" }
         ];
 
         let fichaArrastrada = null;
@@ -370,6 +357,11 @@
                 f.dataset.id = item.id;
                 f.dataset.tipo = item.tipo;
 
+                // Soporte táctil adicional preventivo
+                f.addEventListener('touchstart', (e) => {
+                    // No prevenimos default aquí para permitir el drag-drop-polyfill trabajar
+                }, {passive: true});
+
                 f.addEventListener('dragstart', () => {
                     fichaArrastrada = f;
                     f.classList.add('dragging');
@@ -384,7 +376,8 @@
                 zona.addEventListener('dragover', e => e.preventDefault());
                 zona.addEventListener('dragenter', () => zona.classList.add('hover'));
                 zona.addEventListener('dragleave', () => zona.classList.remove('hover'));
-                zona.addEventListener('drop', () => {
+                zona.addEventListener('drop', (e) => {
+                    e.preventDefault();
                     zona.classList.remove('hover');
                     if (zona.classList.contains('drop-zone')) {
                         if (fichaArrastrada.dataset.tipo !== zona.dataset.type) return;
@@ -411,19 +404,16 @@
         document.getElementById('verificar').onclick = () => {
             let correctas = 0;
             const zonas = document.querySelectorAll('.drop-zone');
-            const board = document.getElementById('main-board');
             
             zonas.forEach(z => {
                 const ficha = z.children[0];
                 if (ficha && ficha.dataset.id === z.dataset.id) {
                     z.style.borderColor = "#2ecc71";
                     z.style.backgroundColor = "rgba(46, 204, 113, 0.2)";
-                    z.style.boxShadow = "0 0 15px rgba(46, 204, 113, 0.4)";
                     correctas++;
                 } else {
                     z.style.borderColor = "#e74c3c";
                     z.style.backgroundColor = "rgba(231, 76, 60, 0.2)";
-                    z.style.boxShadow = "none";
                 }
             });
 
@@ -433,22 +423,30 @@
                 msg.style.color = "#27ae60";
                 dispararConfeti();
             } else {
-                msg.innerText = `Llevas ${correctas} de 12 aciertos.`;
+                msg.innerText = `${correctas} de 12 aciertos. ¡Sigue intentando!`;
                 msg.style.color = "#c0392b";
-                // Efecto de sacudida si hay errores
-                board.classList.add('shake');
-                setTimeout(() => board.classList.remove('shake'), 400);
+                const board = document.getElementById('main-board');
+                board.style.animation = "shake 0.4s";
+                setTimeout(() => board.style.animation = "", 400);
             }
         };
 
-        // --- LÓGICA DE CONFETI ---
+        // Animación de error
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }`;
+        document.head.appendChild(style);
+
         function dispararConfeti() {
             partículas = [];
             for (let i = 0; i < 150; i++) {
                 partículas.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height - canvas.height,
-                    size: Math.random() * 8 + 4,
+                    size: Math.random() * 7 + 3,
                     color: `hsl(${Math.random() * 360}, 70%, 50%)`,
                     speed: Math.random() * 3 + 2,
                     angle: Math.random() * 6.28
@@ -462,7 +460,7 @@
             let activas = false;
             partículas.forEach(p => {
                 p.y += p.speed;
-                p.x += Math.sin(p.angle) * 2;
+                p.x += Math.sin(p.angle) * 1.5;
                 if (p.y < canvas.height) {
                     activas = true;
                     ctx.fillStyle = p.color;
