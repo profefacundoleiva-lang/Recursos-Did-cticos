@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cronología Histórica Universal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ancho-tablero: 1100px;
+            --color-prehistoria: #9b59b6;
+            --color-antigua: #f1c40f;
+            --color-media: #2ecc71;
+            --color-moderna: #e67e22;
+            --color-contemporanea: #95a5a6;
+        }
+
+        /* BLOQUEOS CRÍTICOS PARA TABLETS */
+        * {
+            box-sizing: border-box;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            overscroll-behavior-y: contain; /* Previene el pull-to-refresh */
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #fdf5e6;
+            background-image: radial-gradient(#d2b48c 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 10px;
+            overflow-x: hidden;
+            touch-action: pan-y;
+        }
+
+        h1 { 
+            font-family: 'Cinzel', serif;
+            color: #2c3e50; 
+            text-align: center;
+            font-size: clamp(1.2rem, 5vw, 2.2rem);
+            margin: 15px 0 5px;
+        }
+
+        .instrucciones {
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-style: italic;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .game-viewport {
+            width: 100%;
+            max-width: 1200px;
+            overflow-x: auto;
+            padding: 20px 0;
+            border-radius: 15px;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+        }
+
+        .game-container {
+            position: relative;
+            width: var(--ancho-tablero);
+            height: 450px;
+            margin: 0 auto;
+        }
+
+        .timeline-bar {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            transform: translateY(-50%);
+            display: flex;
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            overflow: hidden;
+            z-index: 2;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .age {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+            text-align: center;
+            padding: 5px;
+        }
+
+        .prehistoria { width: 25%; background: var(--color-prehistoria); }
+        .antigua { width: 20%; background: var(--color-antigua); }
+        .media { width: 15%; background: var(--color-media); }
+        .moderna { width: 20%; background: var(--color-moderna); }
+        .contemporanea { width: 20%; background: var(--color-contemporanea); }
+
+        .marker-col {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 140px;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .linea-punteada {
+            position: absolute;
+            top: 85px;
+            bottom: 85px;
+            left: 50%;
+            border-left: 3px dotted rgba(44, 62, 80, 0.3);
+            z-index: 1;
+        }
+
+        .drop-zone {
+            width: 130px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(4px);
+            border: 2px dashed #95a5a6;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            transition: background 0.2s;
+        }
+
+        .ficha {
+            width: 115px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #2c3e50;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 0.8rem;
+            text-align: center;
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            touch-action: none; 
+            z-index: 10;
+        }
+        
+        /* CORRECCIÓN: Ahora es absoluto respecto al contenedor para evitar saltos */
+        .ficha.moving {
+            position: absolute !important;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transform: scale(1.1);
+            opacity: 0.9;
+            margin: 0 !important;
+        }
+
+        .tipo-fecha { background: #ebf5fb; color: #2980b9; border-left: 5px solid #2980b9; }
+        .tipo-evento { background: #fdfefe; color: #2c3e50; border-left: 5px solid #2c3e50; }
+
+        .drop-zone .ficha { 
+            width: 95%; 
+            border: none; 
+            box-shadow: none; 
+            background: transparent; 
+        }
+
+        .pools-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            max-width: 1100px;
+            margin-top: 20px;
+        }
+
+        .pool-box {
+            background: rgba(255,255,255,0.7);
+            border: 2px solid #bdc3c7;
+            border-radius: 15px;
+            padding: 15px;
+            min-height: 120px;
+        }
+
+        .pool-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        #verificar {
+            margin: 20px 0;
+            padding: 15px 60px;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+        }
+
+        #mensaje { font-weight: 700; height: 1.5rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>CRONOLOGÍA UNIVERSAL</h1>
+    <p class="instrucciones">Toca y arrastra las fichas. En tablet, desliza el tablero si es necesario.</p>
+
+    <div id="mensaje"></div>
+
+    <div class="game-viewport" id="viewport">
+        <div class="game-container" id="main-board">
+            <div class="timeline-bar">
+                <div class="age prehistoria">PREHISTORIA</div>
+                <div class="age antigua">EDAD ANTIGUA</div>
+                <div class="age media">EDAD MEDIA</div>
+                <div class="age moderna">EDAD MODERNA</div>
+                <div class="age contemporanea">EDAD CONTEMP.</div>
+            </div>
+
+            <div class="marker-col" style="left: 0%;">
+                <div class="drop-zone" data-type="fecha" data-id="f1"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h1"></div>
+            </div>
+            <div class="marker-col" style="left: 25%;">
+                <div class="drop-zone" data-type="fecha" data-id="f2"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h2"></div>
+            </div>
+            <div class="marker-col" style="left: 45%;">
+                <div class="drop-zone" data-type="fecha" data-id="f3"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h3"></div>
+            </div>
+            <div class="marker-col" style="left: 60%;">
+                <div class="drop-zone" data-type="fecha" data-id="f4"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h4"></div>
+            </div>
+            <div class="marker-col" style="left: 80%;">
+                <div class="drop-zone" data-type="fecha" data-id="f5"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h5"></div>
+            </div>
+            <div class="marker-col" style="left: 100%;">
+                <div class="drop-zone" data-type="fecha" data-id="f6"></div>
+                <div class="linea-punteada"></div>
+                <div class="drop-zone" data-type="evento" data-id="h6"></div>
+            </div>
+        </div>
+    </div>
+
+    <button id="verificar">VERIFICAR RESULTADOS</button>
+
+    <div class="pools-container">
+        <div class="pool-box">
+            <div id="pool-fechas" class="pool-content"></div>
+        </div>
+        <div class="pool-box">
+            <div id="pool-eventos" class="pool-content"></div>
+        </div>
+    </div>
+
+    <script>
+        const datos = [
+            { id: "f1", texto: "Millones de años atrás", tipo: "fecha" },
+            { id: "f2", texto: "3.500 a.C.", tipo: "fecha" },
+            { id: "f3", texto: "476 d.C.", tipo: "fecha" },
+            { id: "f4", texto: "1.492 d.C.", tipo: "fecha" },
+            { id: "f5", texto: "1.789 d.C.", tipo: "fecha" },
+            { id: "f6", texto: "Actualidad", tipo: "fecha" },
+            { id: "h1", texto: "Origen del Ser Humano", tipo: "evento" },
+            { id: "h2", texto: "Aparición de la Escritura", tipo: "evento" },
+            { id: "h3", texto: "Caída de Roma", tipo: "evento" },
+            { id: "h4", texto: "Europeos llegan a América", tipo: "evento" },
+            { id: "h5", texto: "Revolución Francesa", tipo: "evento" },
+            { id: "h6", texto: "Era digital", tipo: "evento" }
+        ];
+
+        let fichaActiva = null;
+        let originalParent = null;
+        let offsetX = 0;
+        let offsetY = 0;
+        const mainBoard = document.getElementById('main-board');
+        const viewport = document.getElementById('viewport');
+
+        function iniciar() {
+            const pFechas = document.getElementById('pool-fechas');
+            const pEventos = document.getElementById('pool-eventos');
+            const barajados = [...datos].sort(() => Math.random() - 0.5);
+            
+            barajados.forEach(item => {
+                const f = document.createElement('div');
+                f.className = `ficha tipo-${item.tipo}`;
+                f.innerText = item.texto;
+                f.dataset.id = item.id;
+                f.dataset.tipo = item.tipo;
+
+                f.addEventListener('mousedown', startDragging);
+                f.addEventListener('touchstart', startDragging, {passive: false});
+
+                if(item.tipo === 'fecha') pFechas.appendChild(f);
+                else pEventos.appendChild(f);
+            });
+        }
+
+        function startDragging(e) {
+            e.preventDefault();
+            fichaActiva = e.target.closest('.ficha');
+            if (!fichaActiva) return;
+
+            originalParent = fichaActiva.parentElement;
+            
+            const rect = fichaActiva.getBoundingClientRect();
+            const boardRect = mainBoard.getBoundingClientRect();
+            
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+            // Diferencia entre el toque y la esquina de la ficha
+            offsetX = clientX - rect.left;
+            offsetY = clientY - rect.top;
+
+            // Guardamos ancho para que no cambie al sacarla del flujo
+            const currentWidth = rect.width;
+
+            // Movemos la ficha al contenedor principal para que no herede recortes
+            mainBoard.appendChild(fichaActiva);
+            fichaActiva.classList.add('moving');
+            
+            // Posicionamos relativo al TABLERO, no a la ventana
+            fichaActiva.style.width = currentWidth + 'px';
+            updatePosition(clientX, clientY);
+
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag, {passive: false});
+            document.addEventListener('mouseup', stopDragging);
+            document.addEventListener('touchend', stopDragging);
+        }
+
+        function drag(e) {
+            if (!fichaActiva) return;
+            e.preventDefault();
+            
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+            updatePosition(clientX, clientY);
+        }
+
+        function updatePosition(clientX, clientY) {
+            const boardRect = mainBoard.getBoundingClientRect();
+            // Calculamos posición relativa al contenedor mainBoard
+            // Sumamos el scroll del viewport para que la ficha siga el dedo aunque nos movamos lateralmente
+            const x = clientX - boardRect.left;
+            const y = clientY - boardRect.top;
+
+            fichaActiva.style.left = (x - offsetX) + 'px';
+            fichaActiva.style.top = (y - offsetY) + 'px';
+        }
+
+        function stopDragging(e) {
+            if (!fichaActiva) return;
+
+            // Usamos el centro de la ficha para detectar zona
+            const rect = fichaActiva.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            fichaActiva.style.display = 'none';
+            const elBajoDedo = document.elementFromPoint(centerX, centerY);
+            fichaActiva.style.display = 'block';
+
+            const dropZone = elBajoDedo ? elBajoDedo.closest('.drop-zone') : null;
+            const pool = elBajoDedo ? elBajoDedo.closest('.pool-content') : null;
+
+            fichaActiva.classList.remove('moving');
+            fichaActiva.style.position = 'relative';
+            fichaActiva.style.left = '0';
+            fichaActiva.style.top = '0';
+            fichaActiva.style.width = '115px';
+
+            if (dropZone && dropZone.dataset.type === fichaActiva.dataset.tipo) {
+                if (dropZone.children.length > 0) {
+                    devolverAlPool(dropZone.children[0]);
+                }
+                dropZone.appendChild(fichaActiva);
+                fichaActiva.style.width = '95%';
+            } else if (pool) {
+                pool.appendChild(fichaActiva);
+            } else {
+                // Si se suelta en medio de la nada, vuelve a donde estaba antes de este arrastre
+                originalParent.appendChild(fichaActiva);
+                if(originalParent.classList.contains('drop-zone')) fichaActiva.style.width = '95%';
+            }
+
+            fichaActiva = null;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDragging);
+            document.removeEventListener('touchend', stopDragging);
+        }
+
+        function devolverAlPool(ficha) {
+            const poolId = ficha.dataset.tipo === 'fecha' ? 'pool-fechas' : 'pool-eventos';
+            document.getElementById(poolId).appendChild(ficha);
+            ficha.style.width = '115px';
+        }
+
+        document.getElementById('verificar').onclick = () => {
+            let correctas = 0;
+            const zonas = document.querySelectorAll('.drop-zone');
+            zonas.forEach(z => {
+                const ficha = z.children[0];
+                if (ficha && ficha.dataset.id === z.dataset.id) {
+                    z.style.backgroundColor = "rgba(46, 204, 113, 0.3)";
+                    correctas++;
+                } else {
+                    z.style.backgroundColor = "rgba(231, 76, 60, 0.3)";
+                }
+            });
+            document.getElementById('mensaje').innerText = `${correctas} de 12 aciertos.`;
+        };
+
+        iniciar();
+    </script>
+</body>
+</html>
